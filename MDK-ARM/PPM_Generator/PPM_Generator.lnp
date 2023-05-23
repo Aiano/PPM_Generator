@@ -1,0 +1,28 @@
+--cpu=Cortex-M4.fp.sp
+"ppm_generator\startup_stm32f401xe.o"
+"ppm_generator\main.o"
+"ppm_generator\gpio.o"
+"ppm_generator\dma.o"
+"ppm_generator\tim.o"
+"ppm_generator\stm32f4xx_it.o"
+"ppm_generator\stm32f4xx_hal_msp.o"
+"ppm_generator\stm32f4xx_hal_tim.o"
+"ppm_generator\stm32f4xx_hal_tim_ex.o"
+"ppm_generator\stm32f4xx_hal_rcc.o"
+"ppm_generator\stm32f4xx_hal_rcc_ex.o"
+"ppm_generator\stm32f4xx_hal_flash.o"
+"ppm_generator\stm32f4xx_hal_flash_ex.o"
+"ppm_generator\stm32f4xx_hal_flash_ramfunc.o"
+"ppm_generator\stm32f4xx_hal_gpio.o"
+"ppm_generator\stm32f4xx_hal_dma_ex.o"
+"ppm_generator\stm32f4xx_hal_dma.o"
+"ppm_generator\stm32f4xx_hal_pwr.o"
+"ppm_generator\stm32f4xx_hal_pwr_ex.o"
+"ppm_generator\stm32f4xx_hal_cortex.o"
+"ppm_generator\stm32f4xx_hal.o"
+"ppm_generator\stm32f4xx_hal_exti.o"
+"ppm_generator\system_stm32f4xx.o"
+--strict --scatter "PPM_Generator\PPM_Generator.sct"
+--summary_stderr --info summarysizes --map --load_addr_map_info --xref --callgraph --symbols
+--info sizes --info totals --info unused --info veneers
+--list "PPM_Generator.map" -o PPM_Generator\PPM_Generator.axf
