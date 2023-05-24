@@ -41,6 +41,13 @@
 #define PPM_CHANNEL_MIN_WIDTH 1000
 #define PPM_CHANNEL_MAX_WIDTH 2000
 
+#define CHANNEL_LR 0
+#define CHANNEL_FB 1
+#define CHANNEL_UD 2
+#define CHANNEL_RT 3
+#define CHANNEL_APM_MODE 4
+#define CHANNEL_CTRL_MODE 5
+
 #define RX_PIN GPIO_PIN_8
 /* USER CODE END PD */
 
@@ -58,6 +65,12 @@ uint16_t rx_ppm_pulse_width_us[PPM_CHANNEL_NUM] = {1500, 1500, 1000, 1500, 1000,
 // Tx buffer
 uint16_t ppm_pulse_width_us[PPM_CHANNEL_NUM] = {1500, 1500, 1000, 1500, 1000, 1000, 1500, 1500}; // pulse width involve header
 uint16_t ppm_wave[PPM_WAVE_NUM];
+
+// Run task
+uint8_t task_finished_flag = 0;
+
+// Reset states
+uint16_t reset_ppm_pulse_width_us[PPM_CHANNEL_NUM] = {1500, 1500, 1000, 1500, 2000, 1000, 1500, 1500};
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -65,6 +78,8 @@ void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
 void ppm_process();
 void ppm_set_channel_values_6chs(uint16_t ch1, uint16_t ch2, uint16_t ch3, uint16_t ch4, uint16_t ch5, uint16_t ch6);
+void task();
+void reset_states();
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -113,15 +128,29 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-		for(int i = 0; i < PPM_CHANNEL_NUM; i++){
-			ppm_pulse_width_us[i] = rx_ppm_pulse_width_us[i];
-		}
-		ppm_process();
-		
-		if(rx_ppm_pulse_width_us[5] > 1800){
+		if(rx_ppm_pulse_width_us[CHANNEL_CTRL_MODE] > 1800){	// Run task
+			if(task_finished_flag){
+				while(1){ // Warning: lower the throttle before push reset button
+					if(rx_ppm_pulse_width_us[CHANNEL_CTRL_MODE] <= 1800){
+						task_finished_flag = 0;
+						break;
+					}
+					HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
+					HAL_Delay(100);
+				}
+			}else{
+				HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+				task();
+				reset_states();
+				task_finished_flag = 1;
+			}
+		}else{	// Stop/Manual
 			HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
-		}else{
-			HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+			
+			for(int i = 0; i < PPM_CHANNEL_NUM; i++){
+				ppm_pulse_width_us[i] = rx_ppm_pulse_width_us[i];
+			}
+			ppm_process();
 		}
 		HAL_Delay(20);
     /* USER CODE END WHILE */
@@ -205,6 +234,38 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){ // Detect falling edge
 		}
 	}
 
+}
+
+void task(){
+	// Launch
+	ppm_pulse_width_us[CHANNEL_UD] = 1500;
+	ppm_process();
+	HAL_Delay(1000);
+	
+	ppm_pulse_width_us[CHANNEL_UD] = 1650;
+	ppm_process();
+	HAL_Delay(2000);
+	
+	// Hold
+	ppm_pulse_width_us[CHANNEL_UD] = 1500;
+	ppm_process();
+	HAL_Delay(5000);
+	
+	// Land
+	ppm_pulse_width_us[CHANNEL_UD] = 1350;
+	ppm_process();
+	HAL_Delay(3000);
+	
+	ppm_pulse_width_us[CHANNEL_UD] = 0;
+	ppm_process();
+	HAL_Delay(1000);
+}
+
+void reset_states(){
+	for(int i = 0; i < PPM_CHANNEL_NUM; i++){
+		ppm_pulse_width_us[i] = reset_ppm_pulse_width_us[i];
+	}
+	ppm_process();
 }
 
 /* USER CODE END 4 */
